@@ -9,8 +9,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 class Admin extends Authenticatable
 {
-    // use Notifiable;
-    use Notifiable, HasRoles;
+    use HasApiTokens, Notifiable, HasRoles;
 
     protected $guard_name = 'admin';
 
@@ -25,5 +24,11 @@ class Admin extends Authenticatable
         'remember_token',
     ];
 
-    use HasApiTokens, Notifiable, HasRoles; // Add HasApiTokens here
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
+    }
 }
