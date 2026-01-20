@@ -1,32 +1,32 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Models\Admin;
-use Illuminate\Support\Facades\Hash;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register API routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "api" middleware group.
+|
+| Route Files:
+| - admin.php: Admin panel routes (/admin/*)
+| - auth.php: Public user authentication (/auth/*)
+| - public.php: Public website data routes
+| - ai.php: AI tools routes (/ai/*)
+|
+*/
 
-Route::post('/admin/login', function (Request $request) {
-    $request->validate([
-        'email' => 'required|email',
-        'password' => 'required',
-    ]);
+// Admin Routes
+Route::prefix('admin')->group(base_path('routes/api/admin.php'));
 
-    $admin = Admin::where('email', $request->email)->first();
+// Public User Auth Routes
+Route::prefix('auth')->group(base_path('routes/api/auth.php'));
 
-    if (! $admin || ! Hash::check($request->password, $admin->password)) {
-        return response()->json(['message' => 'Unauthorized'], 401);
-    }
+// AI Tools Routes
+Route::prefix('ai')->group(base_path('routes/api/ai.php'));
 
-    // Create token with Spatie Role as a "ability"
-    $token = $admin->createToken('admin-token', [$admin->getRoleNames()->first()])->plainTextToken;
-
-    return response()->json([
-        'token' => $token,
-        'admin' => $admin,
-        'role' => $admin->getRoleNames()->first()
-    ]);
-});
+// Public Website Routes (no prefix)
+require base_path('routes/api/public.php');

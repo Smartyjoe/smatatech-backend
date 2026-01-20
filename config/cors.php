@@ -17,21 +17,35 @@ return [
 
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
-    'allowed_methods' => ['*'],
+    'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 
-    'allowed_origins' => [
-        'http://localhost:3000', 
+    'allowed_origins' => array_filter([
+        env('FRONTEND_URL', 'http://localhost:3000'),
+        env('ADMIN_FRONTEND_URL', 'http://localhost:5173'),
+        'http://localhost:3000',
         'http://127.0.0.1:3000',
         'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'http://localhost:8080',
+    ]),
+
+    'allowed_origins_patterns' => [
+        // Allow any subdomain of your production domain
+        // 'https://*.yourdomain.com',
     ],
 
-    'allowed_origins_patterns' => [],
-
-    'allowed_headers' => ['*'],
+    'allowed_headers' => [
+        'Accept',
+        'Authorization',
+        'Content-Type',
+        'X-Requested-With',
+        'X-CSRF-TOKEN',
+        'X-XSRF-TOKEN',
+    ],
 
     'exposed_headers' => [],
 
-    'max_age' => 0,
+    'max_age' => 86400, // 24 hours
 
     'supports_credentials' => true,
 
