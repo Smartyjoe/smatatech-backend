@@ -222,13 +222,19 @@ class PublicController extends BaseApiController
             'status' => 'unread',
         ]);
 
-        ActivityLog::log(
-            'contact_received',
-            'New contact message',
-            "Contact form submitted by {$contact->name}",
-            null,
-            $contact
-        );
+        // Log activity (non-blocking - don't fail if logging fails)
+        try {
+            ActivityLog::log(
+                'contact_received',
+                'New contact message',
+                "Contact form submitted by {$contact->name}",
+                null,
+                $contact
+            );
+        } catch (\Exception $e) {
+            // Silently fail - contact was still created successfully
+            \Log::warning('Failed to log contact activity: ' . $e->getMessage());
+        }
 
         return $this->createdResponse(null, 'Thank you for your message. We will get back to you soon.');
     }
