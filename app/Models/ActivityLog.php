@@ -48,6 +48,7 @@ class ActivityLog extends Model
 
     /**
      * Log an activity.
+     * This method is fail-safe - it will never throw an exception.
      */
     public static function log(
         string $type,
@@ -56,17 +57,32 @@ class ActivityLog extends Model
         ?Model $actor = null,
         ?Model $subject = null,
         array $properties = []
-    ): self {
-        return self::create([
-            'type' => $type,
-            'title' => $title,
-            'description' => $description,
-            'actor_type' => $actor ? get_class($actor) : null,
-            'actor_id' => $actor?->getKey(),
-            'subject_type' => $subject ? get_class($subject) : null,
-            'subject_id' => $subject?->getKey(),
-            'properties' => $properties,
-        ]);
+    ): ?self {
+        try {
+            // Try to get the authenticated admin if no actor provided
+            if ($actor === null) {
+                $actor = auth('admin')->user();
+            }
+            
+            return self::create([
+                'type' => $type,
+                'title' => $title,
+                'description' => $description,
+                'actor_type' => $actor ? get_class($actor) : null,
+                'actor_id' => $actor?->getKey(),
+                'subject_type' => $subject ? get_class($subject) : null,
+                'subject_id' => $subject?->getKey(),
+                'properties' => $properties,
+            ]);
+        } catch (\Exception $e) {
+            // Log the error but don't throw - activity logging should never break the main operation
+            \Log::warning('Failed to log activity: ' . $e->getMessage(), [
+                'type' => $type,
+                'title' => $title,
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
     }
 
     /**

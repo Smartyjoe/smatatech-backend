@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             SiteSettingsSeeder::class,
             AdminUserSeeder::class,
             SampleDataSeeder::class,
+            EmailSettingsSeeder::class,
         ]);
     }
 }

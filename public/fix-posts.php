@@ -1,6 +1,6 @@
 <?php
 /**
- * Fix Posts Script - Check and seed posts
+ * Comprehensive Fix Script - Fix posts, email settings, and all data issues
  * Access: https://api.smatatech.com.ng/fix-posts.php?token=setup123
  * DELETE THIS FILE AFTER USE!
  */
@@ -13,6 +13,8 @@ if (!isset($_GET['token']) || $_GET['token'] !== $setupToken) {
 }
 
 header('Content-Type: application/json');
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
 
 // Bootstrap Laravel
 require __DIR__ . '/../vendor/autoload.php';
@@ -148,20 +150,131 @@ try {
         }
     }
 
-    // 6. Clear cache
+    // 6. Fix Email Settings
+    $results['email_settings'] = 'Checking...';
+    if (Schema::hasTable('email_settings')) {
+        $emailSettingsCount = DB::table('email_settings')->count();
+        if ($emailSettingsCount == 0) {
+            DB::table('email_settings')->insert([
+                'id' => \Illuminate\Support\Str::uuid()->toString(),
+                'from_name' => 'Smatatech',
+                'from_email' => 'noreply@smatatech.com.ng',
+                'reply_to' => 'hello@smatatech.com.ng',
+                'smtp_host' => 'smtp.example.com',
+                'smtp_port' => 587,
+                'smtp_username' => '',
+                'smtp_password' => '',
+                'smtp_encryption' => 'tls',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $results['email_settings'] = 'Created default settings';
+        } else {
+            // Update null fields with defaults
+            DB::table('email_settings')->whereNull('from_name')->update(['from_name' => 'Smatatech']);
+            DB::table('email_settings')->whereNull('from_email')->update(['from_email' => 'noreply@smatatech.com.ng']);
+            DB::table('email_settings')->whereNull('smtp_encryption')->update(['smtp_encryption' => 'tls']);
+            DB::table('email_settings')->whereNull('smtp_port')->update(['smtp_port' => 587]);
+            $results['email_settings'] = 'Updated with defaults';
+        }
+    }
+
+    // 7. Fix Brevo Config
+    $results['brevo_config'] = 'Checking...';
+    if (Schema::hasTable('brevo_config')) {
+        $brevoCount = DB::table('brevo_config')->count();
+        if ($brevoCount == 0) {
+            DB::table('brevo_config')->insert([
+                'id' => \Illuminate\Support\Str::uuid()->toString(),
+                'api_key' => '',
+                'sender_name' => 'Smatatech',
+                'sender_email' => 'noreply@smatatech.com.ng',
+                'is_enabled' => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $results['brevo_config'] = 'Created default config';
+        } else {
+            DB::table('brevo_config')->whereNull('sender_name')->update(['sender_name' => 'Smatatech']);
+            DB::table('brevo_config')->whereNull('sender_email')->update(['sender_email' => 'noreply@smatatech.com.ng']);
+            DB::table('brevo_config')->whereNull('is_enabled')->update(['is_enabled' => false]);
+            $results['brevo_config'] = 'Updated with defaults';
+        }
+    }
+
+    // 8. Fix Email Templates
+    $results['email_templates'] = 'Checking...';
+    if (Schema::hasTable('email_templates')) {
+        $templateCount = DB::table('email_templates')->count();
+        if ($templateCount == 0) {
+            $templates = [
+                [
+                    'name' => 'Welcome Email',
+                    'slug' => 'welcome',
+                    'subject' => 'Welcome to Smatatech!',
+                    'body' => '<h1>Welcome!</h1><p>Thank you for registering.</p>',
+                    'variables' => json_encode(['user_name', 'site_name']),
+                ],
+                [
+                    'name' => 'Password Reset',
+                    'slug' => 'password-reset',
+                    'subject' => 'Reset Your Password',
+                    'body' => '<h1>Password Reset</h1><p>Click the link to reset your password: {{reset_url}}</p>',
+                    'variables' => json_encode(['user_name', 'reset_url']),
+                ],
+                [
+                    'name' => 'Contact Notification',
+                    'slug' => 'contact-notification',
+                    'subject' => 'New Contact Message',
+                    'body' => '<h1>New Contact</h1><p>From: {{sender_name}}</p><p>{{message}}</p>',
+                    'variables' => json_encode(['sender_name', 'sender_email', 'message']),
+                ],
+            ];
+            
+            foreach ($templates as $template) {
+                DB::table('email_templates')->insert([
+                    'id' => \Illuminate\Support\Str::uuid()->toString(),
+                    'name' => $template['name'],
+                    'slug' => $template['slug'],
+                    'subject' => $template['subject'],
+                    'body' => $template['body'],
+                    'variables' => $template['variables'],
+                    'is_active' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+            $results['email_templates'] = 'Created ' . count($templates) . ' templates';
+        } else {
+            $results['email_templates'] = $templateCount . ' templates exist';
+        }
+    }
+
+    // 9. Clear cache
     Cache::flush();
     $results['cache'] = 'Cleared';
 
-    // 7. Final count
+    // 10. Final counts
     $finalCount = DB::table('posts')
         ->where('status', 'published')
         ->whereNotNull('published_at')
         ->where('published_at', '<=', now())
         ->count();
-    $results['final_published_count'] = $finalCount;
+    $results['final_published_posts'] = $finalCount;
+    
+    $results['final_counts'] = [
+        'posts' => $finalCount,
+        'services' => DB::table('services')->where('status', 'published')->count(),
+        'categories' => DB::table('categories')->where('status', 'active')->count(),
+        'email_templates' => DB::table('email_templates')->count(),
+    ];
 
-    $results['test_url'] = url('/api/posts');
-    $results['next_step'] = 'DELETE this file after verifying posts work!';
+    $results['test_urls'] = [
+        'posts' => url('/api/posts'),
+        'services' => url('/api/services'),
+        'categories' => url('/api/categories'),
+    ];
+    $results['next_step'] = 'DELETE this file after verifying everything works!';
 
     echo json_encode($results, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 

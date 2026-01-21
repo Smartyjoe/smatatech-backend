@@ -60,17 +60,18 @@ class EmailSetting extends Model
 
     /**
      * Transform settings data for API response.
+     * Returns empty strings instead of null for form compatibility.
      */
     public function toApiResponse(): array
     {
         return [
-            'fromName' => $this->from_name,
-            'fromEmail' => $this->from_email,
-            'replyTo' => $this->reply_to,
-            'smtpHost' => $this->smtp_host,
-            'smtpPort' => $this->smtp_port,
-            'smtpUsername' => $this->smtp_username,
-            'smtpEncryption' => $this->smtp_encryption,
+            'fromName' => $this->from_name ?? '',
+            'fromEmail' => $this->from_email ?? '',
+            'replyTo' => $this->reply_to ?? '',
+            'smtpHost' => $this->smtp_host ?? '',
+            'smtpPort' => $this->smtp_port ?? 587,
+            'smtpUsername' => $this->smtp_username ?? '',
+            'smtpEncryption' => $this->smtp_encryption ?? 'tls',
         ];
     }
 }

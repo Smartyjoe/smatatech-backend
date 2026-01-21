@@ -58,13 +58,14 @@ class BrevoConfig extends Model
 
     /**
      * Transform config data for API response.
+     * Returns empty strings instead of null for form compatibility.
      */
     public function toApiResponse(): array
     {
         return [
-            'senderName' => $this->sender_name,
-            'senderEmail' => $this->sender_email,
-            'isEnabled' => $this->is_enabled,
+            'senderName' => $this->sender_name ?? '',
+            'senderEmail' => $this->sender_email ?? '',
+            'isEnabled' => (bool) $this->is_enabled,
             'hasApiKey' => !empty($this->api_key),
         ];
     }

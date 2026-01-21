@@ -79,6 +79,7 @@ class Post extends Model
 
     /**
      * Transform post data for API response.
+     * Always returns consistent structure - never null for nested objects.
      */
     public function toApiResponse(): array
     {
@@ -90,12 +91,22 @@ class Post extends Model
             'content' => $this->content,
             'featuredImage' => $this->featured_image,
             'categoryId' => $this->category_id,
-            'category' => $this->category?->toApiResponse(),
+            'category' => $this->category ? $this->category->toApiResponse() : [
+                'id' => null,
+                'name' => 'Uncategorized',
+                'slug' => 'uncategorized',
+                'description' => null,
+                'status' => 'active',
+            ],
             'author' => $this->author ? [
                 'id' => $this->author->id,
                 'name' => $this->author->name,
-                'avatar' => $this->author->avatar,
-            ] : null,
+                'avatar' => $this->author->avatar ?? null,
+            ] : [
+                'id' => null,
+                'name' => 'Unknown Author',
+                'avatar' => null,
+            ],
             'status' => $this->status,
             'metaTitle' => $this->meta_title,
             'metaDescription' => $this->meta_description,
@@ -107,6 +118,7 @@ class Post extends Model
 
     /**
      * Transform post data for public API response.
+     * Always returns consistent structure - never null for nested objects.
      */
     public function toPublicApiResponse(): array
     {
@@ -121,11 +133,18 @@ class Post extends Model
                 'id' => $this->category->id,
                 'name' => $this->category->name,
                 'slug' => $this->category->slug,
-            ] : null,
+            ] : [
+                'id' => null,
+                'name' => 'Uncategorized',
+                'slug' => 'uncategorized',
+            ],
             'author' => $this->author ? [
                 'name' => $this->author->name,
-                'avatar' => $this->author->avatar,
-            ] : null,
+                'avatar' => $this->author->avatar ?? null,
+            ] : [
+                'name' => 'Unknown Author',
+                'avatar' => null,
+            ],
             'metaTitle' => $this->meta_title,
             'metaDescription' => $this->meta_description,
             'publishedAt' => $this->published_at?->toIso8601String(),
