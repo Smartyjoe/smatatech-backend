@@ -44,7 +44,7 @@ class PublicController extends BaseApiController
             return Service::published()->where('slug', $slug)->firstOrFail();
         });
 
-        return $this->successResponse($service->toApiResponse());
+        return $this->successResponse($service->toDetailedApiResponse());
     }
 
     /**
@@ -72,7 +72,7 @@ class PublicController extends BaseApiController
             return CaseStudy::published()->where('slug', $slug)->firstOrFail();
         });
 
-        return $this->successResponse($caseStudy->toApiResponse());
+        return $this->successResponse($caseStudy->toDetailedApiResponse());
     }
 
     /**
@@ -137,7 +137,7 @@ class PublicController extends BaseApiController
             ->where('slug', $slug)
             ->firstOrFail();
 
-        return $this->successResponse($post->toPublicApiResponse());
+        return $this->successResponse($post->toDetailedApiResponse());
     }
 
     /**
@@ -204,11 +204,19 @@ class PublicController extends BaseApiController
             'company' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:50',
             'projectType' => 'nullable|string|max:100',
-            'budget' => 'nullable|numeric|min:0',
+            'budget' => 'nullable',
             'services' => 'nullable|array',
             'services.*' => 'string',
             'message' => 'required|string|max:5000',
+            'metadata' => 'nullable|array',
+            'metadata.source' => 'nullable|string|max:500',
+            'metadata.referrer' => 'nullable|string|max:500',
+            'metadata.utmSource' => 'nullable|string|max:255',
+            'metadata.utmMedium' => 'nullable|string|max:255',
+            'metadata.utmCampaign' => 'nullable|string|max:255',
         ]);
+
+        $metadata = $validated['metadata'] ?? [];
 
         $contact = Contact::create([
             'name' => $validated['name'],
@@ -220,22 +228,74 @@ class PublicController extends BaseApiController
             'services' => $validated['services'] ?? null,
             'message' => $validated['message'],
             'status' => 'unread',
+            'source_url' => $metadata['source'] ?? null,
+            'referrer' => $metadata['referrer'] ?? null,
+            'utm_source' => $metadata['utmSource'] ?? null,
+            'utm_medium' => $metadata['utmMedium'] ?? null,
+            'utm_campaign' => $metadata['utmCampaign'] ?? null,
+            'ip_address' => $request->ip(),
         ]);
 
-        // Log activity (non-blocking - don't fail if logging fails)
-        try {
-            ActivityLog::log(
-                'contact_received',
-                'New contact message',
-                "Contact form submitted by {$contact->name}",
-                null,
-                $contact
-            );
-        } catch (\Exception $e) {
-            // Silently fail - contact was still created successfully
-            \Log::warning('Failed to log contact activity: ' . $e->getMessage());
-        }
+        // Log activity (non-blocking)
+        ActivityLog::log(
+            'contact_received',
+            'New contact message',
+            "Contact form submitted by {$contact->name}",
+            null,
+            $contact
+        );
 
         return $this->createdResponse(null, 'Thank you for your message. We will get back to you soon.');
+    }
+
+    /**
+     * Get related posts by category/tags.
+     * GET /posts/{slug}/related
+     */
+    public function relatedPosts(string $slug): JsonResponse
+    {
+        $post = Post::with(['category'])->published()->where('slug', $slug)->firstOrFail();
+
+        $relatedPosts = Post::with(['category', 'author'])
+            ->published()
+            ->where('id', '!=', $post->id)
+            ->where(function ($query) use ($post) {
+                if ($post->category_id) {
+                    $query->where('category_id', $post->category_id);
+                }
+                if ($post->tags && is_array($post->tags)) {
+                    $query->orWhereJsonContains('tags', $post->tags);
+                }
+            })
+            ->orderBy('published_at', 'desc')
+            ->limit(3)
+            ->get();
+
+        return $this->successResponse($relatedPosts->map(fn ($p) => [
+            'id' => $p->id,
+            'title' => $p->title,
+            'slug' => $p->slug,
+            'excerpt' => $p->excerpt,
+            'featuredImage' => $p->featured_image ? url($p->featured_image) : null,
+            'publishedAt' => $p->published_at?->toIso8601String(),
+        ]));
+    }
+
+    /**
+     * Get related case studies by industry.
+     * GET /case-studies/{slug}/related
+     */
+    public function relatedCaseStudies(string $slug): JsonResponse
+    {
+        $caseStudy = CaseStudy::published()->where('slug', $slug)->firstOrFail();
+
+        $relatedCaseStudies = CaseStudy::published()
+            ->where('id', '!=', $caseStudy->id)
+            ->where('industry', $caseStudy->industry)
+            ->orderBy('publish_date', 'desc')
+            ->limit(3)
+            ->get();
+
+        return $this->successResponse($relatedCaseStudies->map(fn ($cs) => $cs->toApiResponse()));
     }
 }

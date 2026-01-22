@@ -19,6 +19,8 @@ class Admin extends Authenticatable
         'email',
         'password',
         'avatar',
+        'role_title',
+        'bio',
         'last_login_at',
     ];
 
@@ -67,11 +69,27 @@ class Admin extends Authenticatable
             'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
-            'avatar' => $this->avatar,
+            'avatar' => $this->getAbsoluteUrl($this->avatar),
+            'roleTitle' => $this->role_title,
+            'bio' => $this->bio,
             'role' => $this->getRoleNames()->first() ?? 'viewer',
             'permissions' => $this->getPermissionsArray(),
             'createdAt' => $this->created_at?->toIso8601String(),
             'lastLoginAt' => $this->last_login_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * Get absolute URL for media files.
+     */
+    protected function getAbsoluteUrl(?string $path): ?string
+    {
+        if (!$path) {
+            return null;
+        }
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+        return url($path);
     }
 }

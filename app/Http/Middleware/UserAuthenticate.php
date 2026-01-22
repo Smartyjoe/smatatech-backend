@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Api\ApiResponse;
+use App\Api\ErrorCode;
 use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
@@ -21,49 +23,49 @@ class UserAuthenticate
         $token = $request->bearerToken();
 
         if (!$token) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthenticated.',
-                'errors' => [],
-            ], 401);
+            return ApiResponse::unauthorized('Authentication required.');
         }
 
         $accessToken = PersonalAccessToken::findToken($token);
 
         if (!$accessToken) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid token.',
-                'errors' => [],
-            ], 401);
+            return ApiResponse::error(
+                ErrorCode::AUTH_TOKEN_INVALID,
+                'Invalid or expired token.',
+                null,
+                401
+            );
         }
 
         // Check if token belongs to a User
         if ($accessToken->tokenable_type !== User::class) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized. User access required.',
-                'errors' => [],
-            ], 403);
+            return ApiResponse::error(
+                ErrorCode::FORBIDDEN,
+                'User access required.',
+                null,
+                403
+            );
         }
 
         $user = $accessToken->tokenable;
 
         if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'User not found.',
-                'errors' => [],
-            ], 401);
+            return ApiResponse::error(
+                ErrorCode::AUTH_TOKEN_INVALID,
+                'User account not found.',
+                null,
+                401
+            );
         }
 
         // Check if user is active
-        if ($user->status !== 'active') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Your account has been deactivated.',
-                'errors' => [],
-            ], 403);
+        if (isset($user->status) && $user->status !== 'active') {
+            return ApiResponse::error(
+                ErrorCode::AUTH_ACCOUNT_DISABLED,
+                'Your account has been deactivated.',
+                null,
+                403
+            );
         }
 
         // Set the authenticated user on the request

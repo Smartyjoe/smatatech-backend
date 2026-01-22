@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Api\ApiResponse;
+use App\Api\ErrorCode;
 use App\Models\Admin;
 use Closure;
 use Illuminate\Http\Request;
@@ -21,40 +23,49 @@ class AdminAuthenticate
         $token = $request->bearerToken();
 
         if (!$token) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthenticated.',
-                'errors' => [],
-            ], 401);
+            return ApiResponse::unauthorized('Authentication required.');
         }
 
         $accessToken = PersonalAccessToken::findToken($token);
 
         if (!$accessToken) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid token.',
-                'errors' => [],
-            ], 401);
+            return ApiResponse::error(
+                ErrorCode::AUTH_TOKEN_INVALID,
+                'Invalid or expired token.',
+                null,
+                401
+            );
         }
 
         // Check if token belongs to an Admin
         if ($accessToken->tokenable_type !== Admin::class) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized. Admin access required.',
-                'errors' => [],
-            ], 403);
+            return ApiResponse::error(
+                ErrorCode::FORBIDDEN,
+                'Admin access required.',
+                null,
+                403
+            );
         }
 
         $admin = $accessToken->tokenable;
 
         if (!$admin) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Admin not found.',
-                'errors' => [],
-            ], 401);
+            return ApiResponse::error(
+                ErrorCode::AUTH_TOKEN_INVALID,
+                'Admin account not found.',
+                null,
+                401
+            );
+        }
+
+        // Check if admin is active
+        if (isset($admin->status) && $admin->status !== 'active') {
+            return ApiResponse::error(
+                ErrorCode::AUTH_ACCOUNT_DISABLED,
+                'Your admin account has been disabled.',
+                null,
+                403
+            );
         }
 
         // Set the authenticated admin on the request

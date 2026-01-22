@@ -14,6 +14,7 @@ class Brand extends Model
         'name',
         'logo',
         'website',
+        'website_url',
         'status',
         'order',
     ];
@@ -49,12 +50,27 @@ class Brand extends Model
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'logo' => $this->logo,
+            'logo' => $this->getAbsoluteUrl($this->logo),
             'website' => $this->website,
+            'websiteUrl' => $this->website_url ?? $this->website,
             'status' => $this->status,
             'order' => $this->order,
             'createdAt' => $this->created_at?->toIso8601String(),
             'updatedAt' => $this->updated_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * Get absolute URL for media files.
+     */
+    protected function getAbsoluteUrl(?string $path): ?string
+    {
+        if (!$path) {
+            return null;
+        }
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+        return url($path);
     }
 }

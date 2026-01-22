@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Api\ApiResponse;
+use App\Api\ErrorCode;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -19,11 +21,7 @@ class CheckRole
         $user = $request->user();
 
         if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthenticated.',
-                'errors' => [],
-            ], 401);
+            return ApiResponse::unauthorized('Authentication required.');
         }
 
         // For Admin model with Spatie roles
@@ -65,10 +63,11 @@ class CheckRole
             }
         }
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Forbidden. You do not have the required role.',
-            'errors' => [],
-        ], 403);
+        return ApiResponse::error(
+            ErrorCode::FORBIDDEN_ROLE_REQUIRED,
+            'You do not have the required role to access this resource.',
+            ['required_roles' => $roles],
+            403
+        );
     }
 }

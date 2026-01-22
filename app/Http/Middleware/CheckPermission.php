@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Api\ApiResponse;
+use App\Api\ErrorCode;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -19,11 +21,7 @@ class CheckPermission
         $user = $request->user();
 
         if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthenticated.',
-                'errors' => [],
-            ], 401);
+            return ApiResponse::unauthorized('Authentication required.');
         }
 
         // Super admin has all permissions
@@ -38,10 +36,11 @@ class CheckPermission
             }
         }
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Forbidden. You do not have the required permission.',
-            'errors' => [],
-        ], 403);
+        return ApiResponse::error(
+            ErrorCode::FORBIDDEN_PERMISSION_REQUIRED,
+            'You do not have the required permission to perform this action.',
+            ['required_permissions' => $permissions],
+            403
+        );
     }
 }

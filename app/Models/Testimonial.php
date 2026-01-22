@@ -12,10 +12,15 @@ class Testimonial extends Model
 
     protected $fillable = [
         'client_name',
+        'client_title',
+        'client_company',
         'company',
         'role',
+        'content',
         'testimonial_text',
         'avatar',
+        'rating',
+        'project_type',
         'is_featured',
         'status',
     ];
@@ -24,6 +29,7 @@ class Testimonial extends Model
     {
         return [
             'is_featured' => 'boolean',
+            'rating' => 'integer',
         ];
     }
 
@@ -51,14 +57,30 @@ class Testimonial extends Model
         return [
             'id' => $this->id,
             'clientName' => $this->client_name,
-            'company' => $this->company,
-            'role' => $this->role,
-            'testimonialText' => $this->testimonial_text,
-            'avatar' => $this->avatar,
-            'isFeatured' => $this->is_featured,
+            'company' => $this->client_company ?? $this->company,
+            'role' => $this->client_title ?? $this->role,
+            'testimonialText' => $this->content ?? $this->testimonial_text,
+            'avatar' => $this->getAbsoluteUrl($this->avatar),
+            'rating' => $this->rating ?? 5,
+            'projectType' => $this->project_type,
+            'isFeatured' => (bool) $this->is_featured,
             'status' => $this->status,
             'createdAt' => $this->created_at?->toIso8601String(),
             'updatedAt' => $this->updated_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * Get absolute URL for media files.
+     */
+    protected function getAbsoluteUrl(?string $path): ?string
+    {
+        if (!$path) {
+            return null;
+        }
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+        return url($path);
     }
 }

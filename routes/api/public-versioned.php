@@ -1,8 +1,5 @@
 <?php
 
-use App\Http\Controllers\Api\ApiDocumentationController;
-use App\Http\Controllers\Api\ApiMetaController;
-use App\Http\Controllers\Api\SwaggerController;
 use App\Http\Controllers\Api\Public\ChatController;
 use App\Http\Controllers\Api\Public\InquiryController;
 use App\Http\Controllers\Api\Public\NewsletterController;
@@ -12,40 +9,15 @@ use Illuminate\Support\Facades\DB;
 
 /*
 |--------------------------------------------------------------------------
-| Public Website API Routes
+| Versioned Public API Routes
 |--------------------------------------------------------------------------
 |
-| Publicly accessible routes for the frontend website.
-| These routes do not require authentication.
-|
-| Versioning:
-| - /api/v1/* - Version 1 endpoints (default)
-| - /api/v2/* - Version 2 endpoints (when available)
-| - Version can also be specified via X-API-Version header
+| These routes are included within versioned route groups (v1, v2, etc.)
+| They provide the core public API functionality.
 |
 */
 
-// Root API Endpoint - Comprehensive API Index
-Route::get('/', [ApiDocumentationController::class, 'index']);
-
-// Full API Documentation
-Route::get('/docs', [ApiDocumentationController::class, 'docs']);
-
-// Swagger UI Documentation
-Route::get('/swagger', [SwaggerController::class, 'index']);
-
-// Self-documenting API Meta Endpoints (non-versioned)
-Route::prefix('meta')->group(function () {
-    Route::get('/', [ApiMetaController::class, 'spec']);          // Full spec
-    Route::get('/endpoints', [ApiMetaController::class, 'endpoints']); // Endpoints only
-    Route::get('/errors', [ApiMetaController::class, 'errors']);  // Error codes
-    Route::get('/schemas', [ApiMetaController::class, 'schemas']); // Schema definitions
-    Route::get('/auth', [ApiMetaController::class, 'auth']);      // Auth documentation
-    Route::get('/openapi', [ApiMetaController::class, 'openapi']); // OpenAPI spec
-    Route::get('/versions', [ApiMetaController::class, 'versions']); // API versions
-});
-
-// Health Check Endpoint (no rate limiting for monitoring)
+// Health Check Endpoint
 Route::get('/health', function () {
     $status = [
         'status' => 'ok',
@@ -56,7 +28,6 @@ Route::get('/health', function () {
         'laravel_version' => app()->version(),
     ];
 
-    // Check database connection
     try {
         DB::connection()->getPdo();
         $status['database'] = 'connected';
@@ -65,9 +36,7 @@ Route::get('/health', function () {
         $status['status'] = 'degraded';
     }
 
-    // Check storage writable
     $status['storage_writable'] = is_writable(storage_path('logs'));
-
     $httpStatus = $status['status'] === 'ok' ? 200 : 503;
 
     return response()->json($status, $httpStatus);

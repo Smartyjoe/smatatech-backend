@@ -18,6 +18,12 @@ class Service extends Model
         'full_description',
         'icon',
         'image',
+        'features',
+        'benefits',
+        'process_steps',
+        'meta_title',
+        'meta_description',
+        'og_image',
         'status',
         'order',
     ];
@@ -26,6 +32,9 @@ class Service extends Model
     {
         return [
             'order' => 'integer',
+            'features' => 'array',
+            'benefits' => 'array',
+            'process_steps' => 'array',
         ];
     }
 
@@ -57,7 +66,7 @@ class Service extends Model
     }
 
     /**
-     * Transform service data for API response.
+     * Transform service data for API response (list view).
      */
     public function toApiResponse(): array
     {
@@ -68,11 +77,54 @@ class Service extends Model
             'shortDescription' => $this->short_description,
             'fullDescription' => $this->full_description,
             'icon' => $this->icon,
-            'image' => $this->image,
+            'image' => $this->image ? $this->getAbsoluteUrl($this->image) : null,
+            'features' => $this->features ?? [],
             'status' => $this->status,
             'order' => $this->order,
             'createdAt' => $this->created_at?->toIso8601String(),
             'updatedAt' => $this->updated_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * Transform service data for detailed API response.
+     */
+    public function toDetailedApiResponse(): array
+    {
+        return [
+            'id' => $this->id,
+            'title' => $this->title,
+            'slug' => $this->slug,
+            'shortDescription' => $this->short_description,
+            'fullDescription' => $this->full_description,
+            'icon' => $this->icon,
+            'image' => $this->image ? $this->getAbsoluteUrl($this->image) : null,
+            'features' => $this->features ?? [],
+            'benefits' => $this->benefits ?? [],
+            'processSteps' => $this->process_steps ?? [],
+            'seo' => [
+                'metaTitle' => $this->meta_title,
+                'metaDescription' => $this->meta_description,
+                'ogImage' => $this->og_image ? $this->getAbsoluteUrl($this->og_image) : null,
+            ],
+            'status' => $this->status,
+            'order' => $this->order,
+            'createdAt' => $this->created_at?->toIso8601String(),
+            'updatedAt' => $this->updated_at?->toIso8601String(),
+        ];
+    }
+
+    /**
+     * Get absolute URL for media files.
+     */
+    protected function getAbsoluteUrl(?string $path): ?string
+    {
+        if (!$path) {
+            return null;
+        }
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+        return url($path);
     }
 }

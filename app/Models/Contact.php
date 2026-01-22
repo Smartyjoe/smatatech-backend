@@ -20,6 +20,12 @@ class Contact extends Model
         'services',
         'message',
         'status',
+        'source_url',
+        'referrer',
+        'utm_source',
+        'utm_medium',
+        'utm_campaign',
+        'ip_address',
     ];
 
     protected function casts(): array
@@ -51,9 +57,17 @@ class Contact extends Model
             'phone' => $this->phone,
             'projectType' => $this->project_type,
             'budget' => $this->budget ? (float) $this->budget : null,
-            'services' => $this->services,
+            'services' => $this->services ?? [],
             'message' => $this->message,
             'status' => $this->status,
+            'metadata' => [
+                'sourceUrl' => $this->source_url,
+                'referrer' => $this->referrer,
+                'utmSource' => $this->utm_source,
+                'utmMedium' => $this->utm_medium,
+                'utmCampaign' => $this->utm_campaign,
+                'ipAddress' => $this->ip_address,
+            ],
             'createdAt' => $this->created_at?->toIso8601String(),
             'updatedAt' => $this->updated_at?->toIso8601String(),
         ];

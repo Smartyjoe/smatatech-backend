@@ -73,14 +73,58 @@ class SiteSetting extends Model
     public static function getPublicSettings(): array
     {
         $settings = self::getAllSettings();
+        $socialLinks = $settings['social_links'] ?? [];
         
         return [
             'siteName' => $settings['site_name'] ?? 'Smatatech Technologies',
+            'siteTagline' => $settings['site_tagline'] ?? 'AI-Powered Digital Solutions',
             'siteDescription' => $settings['site_description'] ?? '',
+            'logo' => [
+                'light' => $settings['logo_light'] ?? null,
+                'dark' => $settings['logo_dark'] ?? null,
+                'favicon' => $settings['favicon'] ?? '/favicon.ico',
+            ],
+            'contact' => [
+                'email' => $settings['contact_email'] ?? '',
+                'phone' => $settings['contact_phone'] ?? '',
+                'whatsapp' => $settings['contact_whatsapp'] ?? null,
+                'address' => $settings['address'] ?? '',
+                'city' => $settings['city'] ?? '',
+                'country' => $settings['country'] ?? '',
+            ],
             'contactEmail' => $settings['contact_email'] ?? '',
             'contactPhone' => $settings['contact_phone'] ?? '',
             'address' => $settings['address'] ?? '',
-            'socialLinks' => $settings['social_links'] ?? [],
+            'socialLinks' => [
+                'facebook' => $socialLinks['facebook'] ?? null,
+                'twitter' => $socialLinks['twitter'] ?? null,
+                'linkedin' => $socialLinks['linkedin'] ?? null,
+                'instagram' => $socialLinks['instagram'] ?? null,
+                'youtube' => $socialLinks['youtube'] ?? null,
+                'github' => $socialLinks['github'] ?? null,
+                'whatsapp' => $socialLinks['whatsapp'] ?? null,
+            ],
+            'seo' => [
+                'defaultTitle' => $settings['seo_title'] ?? $settings['site_name'] ?? 'Smatatech',
+                'titleSeparator' => $settings['seo_title_separator'] ?? ' | ',
+                'defaultDescription' => $settings['seo_description'] ?? $settings['site_description'] ?? '',
+                'defaultKeywords' => $settings['seo_keywords'] ?? [],
+                'ogImage' => $settings['og_image'] ?? null,
+            ],
+            'footer' => [
+                'copyrightText' => $settings['footer_copyright'] ?? '© ' . date('Y') . ' Smatatech Technologies. All rights reserved.',
+                'showSocialLinks' => $settings['footer_show_social'] ?? true,
+            ],
+            'heroStats' => $settings['hero_stats'] ?? [
+                ['value' => '150+', 'label' => 'Projects Delivered'],
+                ['value' => '50+', 'label' => 'Happy Clients'],
+                ['value' => '5+', 'label' => 'Years Experience'],
+            ],
+            'features' => [
+                'chatbotEnabled' => $settings['chatbot_enabled'] ?? false,
+                'blogEnabled' => $settings['blog_enabled'] ?? true,
+                'newsletterEnabled' => $settings['newsletter_enabled'] ?? true,
+            ],
         ];
     }
 
