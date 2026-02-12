@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    'ai_blog' => [
+        'text_endpoint' => env('AI_TEXT_ENDPOINT'),
+        'text_key' => env('AI_TEXT_KEY'),
+        'text_model' => env('AI_TEXT_MODEL', 'gpt-4o-mini'),
+        'chat_model' => env('AI_CHAT_MODEL', env('AI_TEXT_MODEL', 'gpt-4o-mini')),
+        'image_endpoint' => env('IMAGE_AI_ENDPOINT', 'https://image-ai.desmart79.workers.dev'),
+        'image_key' => env('IMAGE_AI_KEY'),
+        'trends_endpoint' => env('AI_TRENDS_ENDPOINT', 'https://serpapi.com/search.json'),
+        'trends_key' => env('AI_TRENDS_KEY', env('SERPAPI_KEY')),
+    ],
+
 ];

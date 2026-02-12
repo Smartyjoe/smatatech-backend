@@ -1,7 +1,6 @@
 <?php
 
-use App\Http\Controllers\Api\ApiMetaController;
-use App\Http\Controllers\Api\SwaggerController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -9,75 +8,117 @@ use Illuminate\Support\Facades\Route;
 | API Routes
 |--------------------------------------------------------------------------
 |
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "api" middleware group.
-|
-| Route Files:
-| - admin.php: Admin panel routes (/admin/*)
-| - auth.php: Public user authentication (/auth/*)
-| - public.php: Public website data routes
-| - ai.php: AI tools routes (/ai/*)
-|
-| Versioning:
-| - /api/v1/* - Version 1 endpoints
-| - /api/v2/* - Version 2 endpoints (when ready)
-| - Unversioned routes (/api/*) default to v1
+| Here is where you can register API routes for your application.
+| These routes are loaded by the RouteServiceProvider within a group
+| which is assigned the "api" middleware group.
 |
 */
 
-// =============================================================================
-// Versioned API Routes
-// =============================================================================
-
-// Define a function to register versioned routes
-$registerVersionedRoutes = function (string $version) {
-    // Versioned Meta endpoints
-    Route::prefix('meta')->group(function () use ($version) {
-        Route::get('/', [ApiMetaController::class, 'spec'])->defaults('version', $version);
-        Route::get('/endpoints', [ApiMetaController::class, 'endpoints'])->defaults('version', $version);
-        Route::get('/openapi', [ApiMetaController::class, 'openapi'])->defaults('version', $version);
-    });
-
-    // Versioned Swagger UI
-    Route::get('/swagger', [SwaggerController::class, 'index'])->defaults('version', $version);
-
-    // Versioned Admin Routes
-    Route::prefix('admin')->group(base_path('routes/api/admin.php'));
-
-    // Versioned Public User Auth Routes
-    Route::prefix('auth')->group(base_path('routes/api/auth.php'));
-
-    // Versioned AI Tools Routes
-    Route::prefix('ai')->group(base_path('routes/api/ai.php'));
-};
-
-// Register v1 routes
-Route::prefix('v1')->group(function () use ($registerVersionedRoutes) {
-    $registerVersionedRoutes('v1');
+// API v1 Routes
+Route::prefix('v1')->group(function () {
     
-    // Include public routes (services, posts, etc.)
-    require base_path('routes/api/public-versioned.php');
+    // Public routes (no authentication required)
+    Route::prefix('auth')->group(function () {
+        Route::post('/register', [App\Http\Controllers\Auth\AuthController::class, 'register']);
+        Route::post('/login', [App\Http\Controllers\Auth\AuthController::class, 'login']);
+        Route::post('/forgot-password', [App\Http\Controllers\Auth\AuthController::class, 'forgotPassword']);
+        Route::post('/reset-password', [App\Http\Controllers\Auth\AuthController::class, 'resetPassword']);
+    });
+    
+    // Admin authentication routes
+    Route::prefix('admin')->group(function () {
+        Route::post('/login', [App\Http\Controllers\Auth\AdminAuthController::class, 'login']);
+    });
+    
+    // Public API endpoints
+    Route::get('/brands', [App\Http\Controllers\Public\BrandController::class, 'index']);
+    Route::get('/services', [App\Http\Controllers\Public\ServiceController::class, 'index']);
+    Route::get('/services/{slug}', [App\Http\Controllers\Public\ServiceController::class, 'show']);
+    Route::get('/case-studies', [App\Http\Controllers\Public\CaseStudyController::class, 'index']);
+    Route::get('/case-studies/{slug}', [App\Http\Controllers\Public\CaseStudyController::class, 'show']);
+    Route::get('/testimonials', [App\Http\Controllers\Public\TestimonialController::class, 'index']);
+    Route::get('/posts', [App\Http\Controllers\Public\BlogController::class, 'index']);
+    Route::get('/posts/{slug}', [App\Http\Controllers\Public\BlogController::class, 'show']);
+    Route::post('/posts/{slug}/comments', [App\Http\Controllers\Public\BlogController::class, 'addComment']);
+    Route::get('/categories', [App\Http\Controllers\Public\BlogController::class, 'categories']);
+    Route::get('/settings', [App\Http\Controllers\Public\SettingsController::class, 'index']);
+    Route::get('/chatbot/config', [App\Http\Controllers\Public\ChatbotController::class, 'config']);
+    Route::post('/chatbot/message', [App\Http\Controllers\Public\ChatbotController::class, 'message']);
+    Route::post('/contact', [App\Http\Controllers\Public\ContactController::class, 'store']);
+    
+    // Protected user routes
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/auth/logout', [App\Http\Controllers\Auth\AuthController::class, 'logout']);
+        Route::get('/auth/me', [App\Http\Controllers\Auth\AuthController::class, 'me']);
+        Route::post('/auth/refresh', [App\Http\Controllers\Auth\AuthController::class, 'refresh']);
+    });
+    
+    // Protected admin routes
+    Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+        Route::post('/logout', [App\Http\Controllers\Auth\AdminAuthController::class, 'logout']);
+        Route::get('/me', [App\Http\Controllers\Auth\AdminAuthController::class, 'me']);
+        Route::post('/refresh', [App\Http\Controllers\Auth\AdminAuthController::class, 'refresh']);
+        
+        // Dashboard
+        Route::get('/dashboard/stats', [App\Http\Controllers\Admin\DashboardController::class, 'stats']);
+        Route::get('/dashboard/activity', [App\Http\Controllers\Admin\DashboardController::class, 'activity']);
+        
+        // Brands
+        Route::apiResource('brands', App\Http\Controllers\Admin\BrandController::class);
+        
+        // Services
+        Route::apiResource('services', App\Http\Controllers\Admin\ServiceController::class);
+        
+        // Case Studies
+        Route::apiResource('case-studies', App\Http\Controllers\Admin\CaseStudyController::class);
+        
+        // Testimonials
+        Route::apiResource('testimonials', App\Http\Controllers\Admin\TestimonialController::class);
+        
+        // Blog
+        Route::apiResource('posts', App\Http\Controllers\Admin\BlogPostController::class);
+        Route::apiResource('categories', App\Http\Controllers\Admin\BlogCategoryController::class);
+        Route::apiResource('comments', App\Http\Controllers\Admin\BlogCommentController::class)->only(['index', 'update', 'destroy']);
+        
+        // Users
+        Route::apiResource('users', App\Http\Controllers\Admin\UserController::class);
+        
+        // Contacts
+        Route::apiResource('contacts', App\Http\Controllers\Admin\ContactController::class)->only(['index', 'update', 'destroy']);
+        
+        // Email
+        Route::prefix('email')->group(function () {
+            Route::get('/settings', [App\Http\Controllers\Admin\EmailController::class, 'getSettings']);
+            Route::put('/settings', [App\Http\Controllers\Admin\EmailController::class, 'updateSettings']);
+            Route::get('/templates', [App\Http\Controllers\Admin\EmailController::class, 'getTemplates']);
+            Route::post('/templates', [App\Http\Controllers\Admin\EmailController::class, 'createTemplate']);
+            Route::put('/templates/{id}', [App\Http\Controllers\Admin\EmailController::class, 'updateTemplate']);
+            Route::delete('/templates/{id}', [App\Http\Controllers\Admin\EmailController::class, 'deleteTemplate']);
+            Route::put('/brevo', [App\Http\Controllers\Admin\EmailController::class, 'updateBrevoConfig']);
+            Route::post('/test', [App\Http\Controllers\Admin\EmailController::class, 'testEmail']);
+        });
+        
+        // Settings
+        Route::get('/settings', [App\Http\Controllers\Admin\SettingsController::class, 'index']);
+        Route::put('/settings', [App\Http\Controllers\Admin\SettingsController::class, 'update']);
+        
+        // Chatbot
+        Route::prefix('chatbot')->group(function () {
+            Route::get('/config', [App\Http\Controllers\Admin\ChatbotController::class, 'getConfig']);
+            Route::put('/config', [App\Http\Controllers\Admin\ChatbotController::class, 'updateConfig']);
+            Route::post('/toggle', [App\Http\Controllers\Admin\ChatbotController::class, 'toggle']);
+            Route::get('/training', [App\Http\Controllers\Admin\ChatbotController::class, 'getTraining']);
+            Route::post('/training', [App\Http\Controllers\Admin\ChatbotController::class, 'addTraining']);
+            Route::put('/training/{id}', [App\Http\Controllers\Admin\ChatbotController::class, 'updateTraining']);
+            Route::delete('/training/{id}', [App\Http\Controllers\Admin\ChatbotController::class, 'deleteTraining']);
+        });
+        
+        // File Upload
+        Route::post('/upload', [App\Http\Controllers\Admin\UploadController::class, 'upload']);
+
+        // AI Blog Generator
+        Route::post('/ai/blog-generate', [App\Http\Controllers\Admin\AiBlogController::class, 'generate']);
+        Route::post('/ai/service-generate', [App\Http\Controllers\Admin\AiContentController::class, 'generateService']);
+        Route::post('/ai/case-study-generate', [App\Http\Controllers\Admin\AiContentController::class, 'generateCaseStudy']);
+    });
 });
-
-// Register v2 routes (when ready, uncomment and customize)
-// Route::prefix('v2')->group(function () use ($registerVersionedRoutes) {
-//     $registerVersionedRoutes('v2');
-//     require base_path('routes/api/public-versioned.php');
-// });
-
-// =============================================================================
-// Non-versioned routes (backward compatibility - defaults to v1)
-// =============================================================================
-
-// Admin Routes
-Route::prefix('admin')->group(base_path('routes/api/admin.php'));
-
-// Public User Auth Routes
-Route::prefix('auth')->group(base_path('routes/api/auth.php'));
-
-// AI Tools Routes
-Route::prefix('ai')->group(base_path('routes/api/ai.php'));
-
-// Public Website Routes (no prefix)
-require base_path('routes/api/public.php');

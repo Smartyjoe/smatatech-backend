@@ -2,94 +2,72 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Spatie\Permission\Traits\HasRoles;
 
 class Admin extends Authenticatable
 {
-    use HasApiTokens, HasRoles, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable;
 
-    protected $guard_name = 'admin';
-
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'name',
         'email',
         'password',
-        'avatar',
-        'role_title',
-        'bio',
-        'last_login_at',
+        'role',
+        'permissions',
+        'is_active',
+        'email_verified_at',
     ];
 
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
-            'last_login_at' => 'datetime',
             'password' => 'hashed',
+            'permissions' => 'array',
+            'is_active' => 'boolean',
         ];
     }
 
     /**
-     * Get the posts authored by this admin.
+     * Check if admin has a specific permission
      */
-    public function posts()
+    public function hasPermission(string $permission): bool
     {
-        return $this->hasMany(Post::class, 'author_id');
+        if ($this->role === 'super_admin') {
+            return true;
+        }
+
+        return in_array($permission, $this->permissions ?? []);
     }
 
     /**
-     * Get all permissions for API response.
+     * Check if admin is super admin
      */
-    public function getPermissionsArray(): array
+    public function isSuperAdmin(): bool
     {
-        $role = $this->getRoleNames()->first();
-        
-        if ($role === 'super_admin') {
-            return ['*'];
-        }
-
-        return $this->getAllPermissions()->pluck('name')->toArray();
-    }
-
-    /**
-     * Transform admin data for API response.
-     */
-    public function toApiResponse(): array
-    {
-        return [
-            'id' => $this->id,
-            'name' => $this->name,
-            'email' => $this->email,
-            'avatar' => $this->getAbsoluteUrl($this->avatar),
-            'roleTitle' => $this->role_title,
-            'bio' => $this->bio,
-            'role' => $this->getRoleNames()->first() ?? 'viewer',
-            'permissions' => $this->getPermissionsArray(),
-            'createdAt' => $this->created_at?->toIso8601String(),
-            'lastLoginAt' => $this->last_login_at?->toIso8601String(),
-        ];
-    }
-
-    /**
-     * Get absolute URL for media files.
-     */
-    protected function getAbsoluteUrl(?string $path): ?string
-    {
-        if (!$path) {
-            return null;
-        }
-        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
-            return $path;
-        }
-        return url($path);
+        return $this->role === 'super_admin';
     }
 }

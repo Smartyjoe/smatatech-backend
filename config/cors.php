@@ -15,47 +15,24 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie', 'up'],
+    'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
-    'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    'allowed_methods' => ['*'],
 
-    'allowed_origins' => array_filter([
-        // Production URLs from .env
-        env('FRONTEND_URL'),
-        env('ADMIN_FRONTEND_URL'),
-        // Common local development URLs (always allowed for dev convenience)
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
-        'http://localhost:5173',
-        'http://127.0.0.1:5173',
+    'allowed_origins' => [
         'http://localhost:8080',
-        'http://127.0.0.1:8080',
-        'http://localhost:8000',
-        'http://127.0.0.1:8000',
-    ]),
-
-    'allowed_origins_patterns' => [
-        // Allow any subdomain of your production domain
-        // Uncomment and modify for your domain:
-        // '#^https://.*\.yourdomain\.com$#',
+        'http://localhost:3000',
+        'http://127.0.0.1:5173',
+        'http://127.0.0.1:3000',
     ],
 
-    'allowed_headers' => [
-        'Accept',
-        'Authorization',
-        'Content-Type',
-        'X-Requested-With',
-        'X-CSRF-TOKEN',
-        'X-XSRF-TOKEN',
-        'Origin',
-    ],
+    'allowed_origins_patterns' => [],
 
-    'exposed_headers' => [
-        'X-RateLimit-Limit',
-        'X-RateLimit-Remaining',
-    ],
+    'allowed_headers' => ['*'],
 
-    'max_age' => 86400, // 24 hours
+    'exposed_headers' => [],
+
+    'max_age' => 0,
 
     'supports_credentials' => true,
 

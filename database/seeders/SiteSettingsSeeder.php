@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\ChatbotConfig;
 use App\Models\SiteSetting;
 use Illuminate\Database\Seeder;
 
@@ -13,48 +12,27 @@ class SiteSettingsSeeder extends Seeder
      */
     public function run(): void
     {
-        // Default site settings
         $settings = [
-            ['key' => 'site_name', 'value' => 'Smatatech Technologies', 'type' => 'string', 'group' => 'general'],
-            ['key' => 'site_description', 'value' => 'Digital Solutions Company', 'type' => 'string', 'group' => 'general'],
-            ['key' => 'contact_email', 'value' => 'hello@smatatech.com', 'type' => 'string', 'group' => 'contact'],
-            ['key' => 'contact_phone', 'value' => '+1234567890', 'type' => 'string', 'group' => 'contact'],
-            ['key' => 'address', 'value' => '123 Tech Street, Innovation City', 'type' => 'string', 'group' => 'contact'],
-            [
-                'key' => 'social_links',
-                'value' => json_encode([
-                    'facebook' => 'https://facebook.com/smatatech',
-                    'twitter' => 'https://twitter.com/smatatech',
-                    'linkedin' => 'https://linkedin.com/company/smatatech',
-                    'instagram' => 'https://instagram.com/smatatech',
-                ]),
-                'type' => 'json',
-                'group' => 'social'
-            ],
+            ['key' => 'site_name', 'value' => 'Smatatech Technologies', 'type' => 'text'],
+            ['key' => 'site_description', 'value' => 'We build intelligent digital solutions that transform businesses.', 'type' => 'text'],
+            ['key' => 'contact_email', 'value' => 'info@smatatech.com.ng', 'type' => 'text'],
+            ['key' => 'contact_phone', 'value' => '+234 801 234 5678', 'type' => 'text'],
+            ['key' => 'address', 'value' => 'Lagos, Nigeria', 'type' => 'text'],
+            ['key' => 'social_facebook', 'value' => 'https://facebook.com/smatatech', 'type' => 'text'],
+            ['key' => 'social_twitter', 'value' => 'https://twitter.com/smatatech', 'type' => 'text'],
+            ['key' => 'social_linkedin', 'value' => 'https://linkedin.com/company/smatatech', 'type' => 'text'],
+            ['key' => 'social_instagram', 'value' => 'https://instagram.com/smatatech', 'type' => 'text'],
+            ['key' => 'social_youtube', 'value' => 'https://youtube.com/@smatatech', 'type' => 'text'],
+            ['key' => 'logo', 'value' => '/logo.png', 'type' => 'text'],
+            ['key' => 'favicon', 'value' => '/favicon.ico', 'type' => 'text'],
+            ['key' => 'footer_text', 'value' => '(c) 2026 Smatatech Technologies. All rights reserved.', 'type' => 'text'],
         ];
 
         foreach ($settings as $setting) {
-            SiteSetting::firstOrCreate(
+            SiteSetting::updateOrCreate(
                 ['key' => $setting['key']],
                 $setting
             );
         }
-
-        // Default chatbot config
-        ChatbotConfig::firstOrCreate(
-            ['id' => ChatbotConfig::first()?->id ?? \Illuminate\Support\Str::uuid()],
-            [
-                'system_prompt' => 'You are a helpful assistant for Smatatech Technologies, a digital solutions company specializing in web development, AI solutions, and digital transformation.',
-                'personality_tone' => 'professional',
-                'allowed_topics' => ['web development', 'AI solutions', 'pricing', 'services', 'contact'],
-                'restricted_topics' => ['competitors', 'internal processes'],
-                'greeting_message' => 'Hello! Welcome to Smatatech Technologies. How can I help you today?',
-                'fallback_message' => 'I apologize, but I\'m not sure how to help with that. Would you like to speak with our team directly?',
-                'is_enabled' => true,
-                'version_label' => 'v1.0',
-            ]
-        );
-
-        $this->command->info('Site settings seeded successfully!');
     }
 }
