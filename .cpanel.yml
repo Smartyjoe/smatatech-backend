@@ -1,0 +1,5 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/propxtur/repositories/smatatech-backend
+    - /bin/cp -R images $DEPLOYPATH
