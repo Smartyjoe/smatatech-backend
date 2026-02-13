@@ -5,8 +5,11 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use App\Models\BlogPost;
 use App\Models\BlogCategory;
+use App\Services\EmailConfigService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class BlogController extends Controller
 {
@@ -62,7 +65,7 @@ class BlogController extends Controller
         return $this->successResponse($post);
     }
 
-    public function addComment(Request $request, $slug)
+    public function addComment(Request $request, $slug, EmailConfigService $emailConfigService)
     {
         $post = BlogPost::where('slug', $slug)
             ->where('status', 'published')
@@ -85,11 +88,39 @@ class BlogController extends Controller
             'status' => 'pending',
         ]);
 
+        $this->notifyAdminOfComment($post, $comment, $emailConfigService);
+
         return $this->successResponse(
             $comment,
             'Comment submitted and awaiting approval.',
             201
         );
+    }
+
+    private function notifyAdminOfComment(BlogPost $post, $comment, EmailConfigService $emailConfigService): void
+    {
+        try {
+            $emailConfigService->apply();
+            $adminEmail = $emailConfigService->getAdminNotificationEmail();
+            if (!$adminEmail) {
+                return;
+            }
+
+            Mail::raw(
+                "A new blog comment is awaiting moderation.\n\nPost: {$post->title}\nAuthor: {$comment->author_name}\nEmail: {$comment->author_email}\nComment:\n{$comment->content}",
+                function ($message) use ($adminEmail, $comment) {
+                    $message->to($adminEmail)
+                        ->subject('New Blog Comment Awaiting Moderation')
+                        ->replyTo($comment->author_email, $comment->author_name);
+                }
+            );
+        } catch (\Throwable $e) {
+            Log::error('Failed to send blog comment notification email.', [
+                'post_id' => $post->id,
+                'comment_id' => $comment->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function categories()

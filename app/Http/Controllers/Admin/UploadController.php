@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -30,6 +31,10 @@ class UploadController extends Controller
         }
 
         try {
+            if (!Storage::disk('public')->exists('uploads')) {
+                Storage::disk('public')->makeDirectory('uploads');
+            }
+
             // Generate unique filename
             $extension = $file->getClientOriginalExtension();
             $filename = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) 
@@ -51,6 +56,13 @@ class UploadController extends Controller
             ], 'File uploaded successfully', 201);
 
         } catch (\Exception $e) {
+            Log::error('File upload failed.', [
+                'type' => $type,
+                'disk' => 'public',
+                'app_url' => config('app.url'),
+                'file_name' => $file?->getClientOriginalName(),
+                'error' => $e->getMessage(),
+            ]);
             return $this->errorResponse('File upload failed: ' . $e->getMessage(), 500);
         }
     }
