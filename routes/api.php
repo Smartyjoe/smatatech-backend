@@ -58,6 +58,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/logout', [App\Http\Controllers\Auth\AdminAuthController::class, 'logout']);
         Route::get('/me', [App\Http\Controllers\Auth\AdminAuthController::class, 'me']);
         Route::post('/refresh', [App\Http\Controllers\Auth\AdminAuthController::class, 'refresh']);
+        Route::put('/profile', [App\Http\Controllers\Auth\AdminAuthController::class, 'updateProfile']);
+        Route::put('/profile/password', [App\Http\Controllers\Auth\AdminAuthController::class, 'updatePassword']);
         
         // Dashboard
         Route::get('/dashboard/stats', [App\Http\Controllers\Admin\DashboardController::class, 'stats']);
@@ -94,7 +96,6 @@ Route::prefix('v1')->group(function () {
             Route::post('/templates', [App\Http\Controllers\Admin\EmailController::class, 'createTemplate']);
             Route::put('/templates/{id}', [App\Http\Controllers\Admin\EmailController::class, 'updateTemplate']);
             Route::delete('/templates/{id}', [App\Http\Controllers\Admin\EmailController::class, 'deleteTemplate']);
-            Route::put('/brevo', [App\Http\Controllers\Admin\EmailController::class, 'updateBrevoConfig']);
             Route::post('/test', [App\Http\Controllers\Admin\EmailController::class, 'testEmail']);
         });
         
